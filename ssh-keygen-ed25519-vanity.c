@@ -66,7 +66,7 @@ uint8_t * base64_encode(const uint8_t *src, size_t len, size_t *out_len) {
 #define MLEN 19  // metadata length
 #define PK_LEN 32
 #define SK_LEN 234
-#define CHECK "\xf0\xca\xcc\x1a" // 0xfocaccia
+#define CHECK "\xf0\xca\xcc\x1a" // 0xf0cacc1a
 #define META "\x00\x00\x00\x0b" "ssh-ed25519" "\x00\x00\x00\x20"
 #define KEY_PLACEHOLDER "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
