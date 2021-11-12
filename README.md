@@ -7,6 +7,10 @@ then `./vanity <substring>` to find a public key with given substring.
 There is also a shell script that does basically the same thing but by actually running `ssh-keygen`,
 which is probably slower.
 
+NEW: There is now an additional Rust version, which can be compiled with `cargo build`,
+then run with `cargo run -- <substring> [private keyfile]`.
+If no keyfile path is provided, the private key will be printed to stdout.
+
 This is already covered by the licence, but once again I am **not** responsible for your use of this code.
 Don't @ me.
 (You can open an issue if there's any problems, with no guarantee that I'll look at it.)
@@ -17,6 +21,8 @@ Don't @ me.
 # Pipe public key to <file>.pub and private key to <file>,
 # while displaying public key on stdout.
 ./vanity <substring> | tee >(head -n 1 > <file>.pub) >(tail -n 3 > <file>) | head -n 1
+# Search for key in parallel, with 4 jobs
+parallel -n 0 ./vanity <substring> -- 1 2 3 4
 # Generate fingerprint and attempt to find the public keyfile.
 ssh-keygen -lf <file>
 # Generate public key from private keyfile.
