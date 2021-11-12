@@ -65,6 +65,19 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 0102030405                                padding
 ```
 
+## Rough performance stats
+
+Obviously since it's brute force the times are probabilistic,
+but this gives you an idea of how feasible it would be to find your desired number of characters.
+
+| Substring | Time (s) |
+| --------- | -------- |
+| a         | 0.002    |
+| ar        | 0.015    |
+| ars       | 0.501    |
+| arso      | 3.753    |
+| arson     | abandon all hope ye who seek five sequential characters |
+
 ## References
 
 * Peter Lyons, [OpenSSH Ed25519 Private Key File Format](https://peterlyons.com/problog/2017/12/openssh-ed25519-private-key-file-format/)
