@@ -3,7 +3,7 @@
 Finds a vanity EdDSA SSH public key (and corresponding private key, of course) by brute force.
 Requires `libsodium` to be installed to generate the raw Ed25519 keypair.
 Run `make` to compile to executable `vanity`,
-then `./vanity <substring>` to find an public key with given substring.
+then `./vanity <substring>` to find a public key with given substring.
 There is also a shell script that does basically the same thing but by actually running `ssh-keygen`,
 which is probably slower.
 
