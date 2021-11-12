@@ -36,7 +36,7 @@ OpenSSH literally generates it just using `arc4random()`,
 but doesn't do anything with it except duplicate it.
 You can edit the source to use your favourite hex word; I'm using `0xf0cacc1a`.
 
-The blocksize is [probably](https://github.com/openssh/openssh-portable/blob/master/cipher.c#L86) 16,
+The blocksize is [8](https://github.com/openssh/openssh-portable/blob/master/cipher.c#L110),
 and for [some reason](https://github.com/openssh/openssh-portable/blob/master/sshkey.c#L3972) the number of padding bytes is total modulo 16.
 Since up until just before the padding there are 229 bytes, there are 5 bytes of padding,
 which OpenSSH conventionally pads with successive integral values.
