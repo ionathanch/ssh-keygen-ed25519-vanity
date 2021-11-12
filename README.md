@@ -69,4 +69,4 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 * Peter Lyons, [OpenSSH Ed25519 Private Key File Format](https://peterlyons.com/problog/2017/12/openssh-ed25519-private-key-file-format/)
 * AJ ONeal, [The OpenSSH Private Key Format](https://coolaj86.com/articles/the-openssh-private-key-format/)
-* And of course openssh/openssh-portable, especially [sshkey.c](https://github.com/openssh/openssh-portable/blob/master/sshkey.c#L3947)
+* And of course [openssh/openssh-portable](https://github.com/openssh/openssh-portable), especially [sshkey.c](https://github.com/openssh/openssh-portable/blob/master/sshkey.c#L3947)
