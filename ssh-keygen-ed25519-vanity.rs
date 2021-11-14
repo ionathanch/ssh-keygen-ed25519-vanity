@@ -1,15 +1,18 @@
 extern crate rand;
+extern crate regex;
 extern crate base64;
 extern crate bytebuffer;
 extern crate ed25519_dalek;
 
 use std::env::args;
 use std::mem::size_of;
-use std::io::{Write, Error};
+use std::error::Error;
+use std::io::Write;
 use std::fs::{File, Permissions};
 use std::os::unix::fs::PermissionsExt;
 
 use rand::rngs::OsRng;
+use regex::Regex;
 use base64::encode;
 use bytebuffer::{ByteBuffer, Endian::BigEndian};
 use ed25519_dalek::{Keypair, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH};
@@ -48,9 +51,10 @@ fn get_sk(pk: &[u8], keypair: Keypair) -> String {
   return encode(buffer.to_bytes());
 }
 
-fn main() -> Result<(), Error> {
-  let substring = args().nth(1).unwrap_or_default();
+fn main() -> Result<(), Box<dyn Error>> {
+  let pattern = args().nth(1).unwrap_or_default();
   let path = args().nth(2);
+  let regex = Regex::new(&pattern)?;
   let mut csprng = OsRng{};
   let mut buffer = ByteBuffer::new();
   buffer.set_endian(BigEndian);
@@ -63,7 +67,7 @@ fn main() -> Result<(), Error> {
     buffer.write_bytes(&keypair.public.to_bytes());
     let pk = buffer.to_bytes();
     let pk64 = encode(&pk);
-    if pk64.contains(&substring) {
+    if regex.is_match(&pk64) {
       println!("ssh-ed25519 {}", pk64);
       let sk64 = get_sk(&pk, keypair);
       match path {
