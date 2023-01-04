@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <sodium.h>
 #include <string.h>
 #include <stdint.h>
@@ -102,7 +104,7 @@ int main(int argc, char* argv[]) {
   while (!found) {
     crypto_sign_ed25519_keypair(SK + PKI1, SK + SKI);
     pk_base64 = base64_encode(SK + PKI1 - MLEN, MLEN + PK_LEN, &pk_base64_len);
-    found = strstr(pk_base64, substring);
+    found = strcasestr(pk_base64, substring);
 
     if (found) {
       memcpy(SK + PKI2, SK + PKI1, PK_LEN);
