@@ -97,14 +97,14 @@ int main(int argc, char* argv[]) {
   uint8_t* sk_base64;
   size_t pk_base64_len = 0;
   size_t sk_base64_len = 0;
-  char* found = NULL;
+  int found = -1;
 
-  while (!found) {
+  while (found < 0) {
     crypto_sign_ed25519_keypair(SK + PKI1, SK + SKI);
     pk_base64 = base64_encode(SK + PKI1 - MLEN, MLEN + PK_LEN, &pk_base64_len);
-    found = strstr(pk_base64, substring);
+    found = strcasecmp(pk_base64, substring);
 
-    if (found) {
+    if (found >= 0) {
       memcpy(SK + PKI2, SK + PKI1, PK_LEN);
       sk_base64 = base64_encode(SK, SK_LEN, &sk_base64_len);
       printf("ssh-ed25519 %.*s\n", pk_base64_len, pk_base64);
