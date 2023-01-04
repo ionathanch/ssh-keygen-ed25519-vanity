@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <sodium.h>
 #include <string.h>
 #include <stdint.h>
@@ -97,14 +99,14 @@ int main(int argc, char* argv[]) {
   uint8_t* sk_base64;
   size_t pk_base64_len = 0;
   size_t sk_base64_len = 0;
-  int found = -1;
+  char* found = NULL;
 
-  while (found < 0) {
+  while (!found) {
     crypto_sign_ed25519_keypair(SK + PKI1, SK + SKI);
     pk_base64 = base64_encode(SK + PKI1 - MLEN, MLEN + PK_LEN, &pk_base64_len);
-    found = strcasecmp(pk_base64, substring);
+    found = strcasestr(pk_base64, substring);
 
-    if (found >= 0) {
+    if (found) {
       memcpy(SK + PKI2, SK + PKI1, PK_LEN);
       sk_base64 = base64_encode(SK, SK_LEN, &sk_base64_len);
       printf("ssh-ed25519 %.*s\n", pk_base64_len, pk_base64);
