@@ -7,8 +7,8 @@ then `./vanity <substring>` to find a public key with given substring.
 There is also a shell script that does basically the same thing but by actually running `ssh-keygen`,
 which is probably slower.
 
-NEW: There is now an additional Rust version, which can be compiled with `cargo build`,
-then run with `cargo run -- <substring> [keyfile]`.
+NEW: There is now an additional Rust version, which can be compiled with `cargo build --release`,
+then run with `cargo run --release -- <substring> [keyfile]`.
 The private key will be written to `[keyfile]`,
 while the public key will be written to `[keyfile].pub`.
 If no keyfile path is provided, the private key will be printed to stdout.
