@@ -8,12 +8,13 @@ use std::env::args;
 use std::mem::size_of;
 use std::error::Error;
 use std::io::Write;
+use std::path::Path;
 use std::fs::{File, Permissions};
 use std::os::unix::fs::PermissionsExt;
 
 use rand::rngs::OsRng;
 use regex::Regex;
-use base64::encode;
+use base64::{Engine, engine::general_purpose};
 use bytebuffer::{ByteBuffer, Endian::BigEndian};
 use ed25519_dalek::{Keypair, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH};
 
@@ -21,6 +22,7 @@ const KEYTYPE: &[u8] = b"ssh-ed25519";
 const MAGIC: &[u8] = b"openssh-key-v1\x00";
 const NONE: &[u8] = b"none";
 const BLOCKSIZE: usize = 8;
+const CHECK: u32 = 0xf0cacc1a;
 
 fn get_sk(pk: &[u8], keypair: Keypair) -> String {
   let mut buffer = ByteBuffer::new();
@@ -35,8 +37,8 @@ fn get_sk(pk: &[u8], keypair: Keypair) -> String {
   buffer.write_bytes(pk);                     // public key
 
   let mut sk = ByteBuffer::new();
-  sk.write_u32(0xf0cacc1a);                   // check bytes
-  sk.write_u32(0xf0cacc1a);
+  sk.write_u32(CHECK);                        // check bytes
+  sk.write_u32(CHECK);
   sk.write_bytes(pk);                         // public key (again)
   sk.write_u32((SECRET_KEY_LENGTH + PUBLIC_KEY_LENGTH) as u32);
   sk.write_bytes(&keypair.secret.to_bytes()); // private key
@@ -47,8 +49,8 @@ fn get_sk(pk: &[u8], keypair: Keypair) -> String {
   }
 
   buffer.write_u32(sk.len() as u32);
-  buffer.write_bytes(&sk.to_bytes());
-  return encode(buffer.to_bytes());
+  buffer.write_bytes(&sk.as_bytes());
+  return general_purpose::STANDARD.encode(buffer.as_bytes());
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -65,20 +67,26 @@ fn main() -> Result<(), Box<dyn Error>> {
   loop {
     let keypair = Keypair::generate(&mut csprng);
     buffer.write_bytes(&keypair.public.to_bytes());
-    let pk = buffer.to_bytes();
-    let pk64 = encode(&pk);
+    let pk = buffer.as_bytes();
+    let pk64 = general_purpose::STANDARD.encode(&pk);
     if regex.is_match(&pk64) {
       println!("ssh-ed25519 {}", pk64);
       let sk64 = get_sk(&pk, keypair);
       match path {
         Some(path) => {
-          let mut file = File::create(path)?;
+          let mut public = File::create(Path::new(&path).with_extension("pub"))?;
           if cfg!(unix) {
-            file.set_permissions(Permissions::from_mode(0o600))?;
+            public.set_permissions(Permissions::from_mode(0o644))?;
           }
-          writeln!(file, "-----BEGIN OPENSSH PRIVATE KEY-----")?;
-          writeln!(file, "{}", sk64)?;
-          writeln!(file, "-----END OPENSSH PRIVATE KEY-----")?;
+          writeln!(public, "ssh-ed25519 {}", pk64)?;
+
+          let mut private = File::create(path)?;
+          if cfg!(unix) {
+            private.set_permissions(Permissions::from_mode(0o600))?;
+          }
+          writeln!(private, "-----BEGIN OPENSSH PRIVATE KEY-----")?;
+          writeln!(private, "{}", sk64)?;
+          writeln!(private, "-----END OPENSSH PRIVATE KEY-----")?;
         }
         None => {
           println!("-----BEGIN OPENSSH PRIVATE KEY-----");

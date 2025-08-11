@@ -8,7 +8,9 @@ There is also a shell script that does basically the same thing but by actually 
 which is probably slower.
 
 NEW: There is now an additional Rust version, which can be compiled with `cargo build`,
-then run with `cargo run -- <substring> [private keyfile]`.
+then run with `cargo run -- <substring> [keyfile]`.
+The private key will be written to `[keyfile]`,
+while the public key will be written to `[keyfile].pub`.
 If no keyfile path is provided, the private key will be printed to stdout.
 
 This is already covered by the licence, but once again I am **not** responsible for your use of this code.
