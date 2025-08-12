@@ -4,16 +4,18 @@ extern crate base64;
 extern crate bytebuffer;
 extern crate ed25519_dalek;
 
-use std::env::args;
 use std::mem::size_of;
 use std::error::Error;
 use std::io::Write;
 use std::path::Path;
 use std::fs::{File, Permissions};
 use std::os::unix::fs::PermissionsExt;
+use std::thread;
+use std::sync::mpsc::channel;
 
+use clap::Parser;
 use rand::rngs::OsRng;
-use regex::Regex;
+use regex::RegexBuilder;
 use base64::{Engine, engine::general_purpose};
 use bytebuffer::{ByteBuffer, Endian::BigEndian};
 use ed25519_dalek::{Keypair, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH};
@@ -23,6 +25,26 @@ const MAGIC: &[u8] = b"openssh-key-v1\x00";
 const NONE: &[u8] = b"none";
 const BLOCKSIZE: usize = 8;
 const CHECK: u32 = 0xf0cacc1a;
+
+#[derive(Parser)]
+#[command(version)]
+struct Args {
+  /// Substring to find in public key
+  #[arg(value_name = "substring")]
+  pattern: String,
+
+  /// Ignore case
+  #[arg(short)]
+  i: bool,
+
+  /// Number of threads
+  #[arg(short, value_name = "threads", default_value_t = 1)]
+  j: u8,
+
+  /// Output file path of private and public (+ .pub) keys
+  #[arg(short, value_name = "output")]
+  o: Option<String>
+}
 
 fn get_sk(pk: &[u8], keypair: Keypair) -> String {
   let mut buffer = ByteBuffer::new();
@@ -54,48 +76,58 @@ fn get_sk(pk: &[u8], keypair: Keypair) -> String {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-  let pattern = args().nth(1).unwrap_or_default();
-  let path = args().nth(2);
-  let regex = Regex::new(&pattern)?;
-  let mut csprng = OsRng{};
-  let mut buffer = ByteBuffer::new();
-  buffer.set_endian(BigEndian);
-  buffer.write_u32(KEYTYPE.len() as u32);
-  buffer.write_bytes(KEYTYPE);
-  buffer.write_u32(PUBLIC_KEY_LENGTH as u32);
+  let args = Args::parse();
+  let (tx, rx) = channel();
 
-  loop {
-    let keypair = Keypair::generate(&mut csprng);
-    buffer.write_bytes(&keypair.public.to_bytes());
-    let pk = buffer.as_bytes();
-    let pk64 = general_purpose::STANDARD.encode(&pk);
-    if regex.is_match(&pk64) {
-      println!("ssh-ed25519 {}", pk64);
-      let sk64 = get_sk(&pk, keypair);
-      match path {
-        Some(path) => {
-          let mut public = File::create(Path::new(&path).with_extension("pub"))?;
-          if cfg!(unix) {
-            public.set_permissions(Permissions::from_mode(0o644))?;
-          }
-          writeln!(public, "ssh-ed25519 {}", pk64)?;
+  for _j in 0..args.j {
+    let tx = tx.clone();
+    let regex = RegexBuilder::new(&args.pattern)
+      .case_insensitive(args.i)
+      .build()?;
+    let mut csprng = OsRng{};
+    let mut buffer = ByteBuffer::new();
+    buffer.set_endian(BigEndian);
+    buffer.write_u32(KEYTYPE.len() as u32);
+    buffer.write_bytes(KEYTYPE);
+    buffer.write_u32(PUBLIC_KEY_LENGTH as u32);
 
-          let mut private = File::create(path)?;
-          if cfg!(unix) {
-            private.set_permissions(Permissions::from_mode(0o600))?;
-          }
-          writeln!(private, "-----BEGIN OPENSSH PRIVATE KEY-----")?;
-          writeln!(private, "{}", sk64)?;
-          writeln!(private, "-----END OPENSSH PRIVATE KEY-----")?;
-        }
-        None => {
-          println!("-----BEGIN OPENSSH PRIVATE KEY-----");
-          println!("{}", sk64);
-          println!("-----END OPENSSH PRIVATE KEY-----");
-        }
+    thread::spawn(move || loop {
+      let keypair = Keypair::generate(&mut csprng);
+      buffer.write_bytes(&keypair.public.to_bytes());
+      let pk = buffer.as_bytes();
+      let pk64 = general_purpose::STANDARD.encode(&pk);
+      if regex.is_match(&pk64) {
+        println!("ssh-ed25519 {}", pk64);
+        let sk64 = get_sk(&pk, keypair);
+        let _ = tx.send((pk64, sk64));
+        break;
       }
-      break Ok(());
-    }
-    buffer.set_wpos(buffer.get_wpos() - PUBLIC_KEY_LENGTH);
+      buffer.set_wpos(buffer.get_wpos() - PUBLIC_KEY_LENGTH);
+    });
   }
+
+  let (pk64, sk64) = rx.recv()?;
+  match args.o {
+    Some(path) => {
+      let mut public = File::create(Path::new(&path).with_extension("pub"))?;
+      if cfg!(unix) {
+        public.set_permissions(Permissions::from_mode(0o644))?;
+      }
+      writeln!(public, "ssh-ed25519 {}", pk64)?;
+
+      let mut private = File::create(path)?;
+      if cfg!(unix) {
+        private.set_permissions(Permissions::from_mode(0o600))?;
+      }
+      writeln!(private, "-----BEGIN OPENSSH PRIVATE KEY-----")?;
+      writeln!(private, "{}", sk64)?;
+      writeln!(private, "-----END OPENSSH PRIVATE KEY-----")?;
+    }
+    None => {
+      println!("-----BEGIN OPENSSH PRIVATE KEY-----");
+      println!("{}", sk64);
+      println!("-----END OPENSSH PRIVATE KEY-----");
+    }
+  }
+  Ok(())
 }
