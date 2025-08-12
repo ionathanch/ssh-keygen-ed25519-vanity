@@ -1,3 +1,4 @@
 vanity
 /target
 Cargo.lock
+id_ed25519*
