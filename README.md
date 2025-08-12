@@ -8,14 +8,15 @@ There is also a shell script that does basically the same thing but by actually 
 which is probably slower.
 
 NEW: There is now an additional Rust version, which can be compiled with `cargo build --release`,
-then run with `cargo run --release -- <substring> [keyfile]`.
-The private key will be written to `[keyfile]`,
-while the public key will be written to `[keyfile].pub`.
-If no keyfile path is provided, the private key will be printed to stdout.
+then run with `cargo run --release -- <substring>`.
+Optional flags are:
 
-This is already covered by the licence, but once again I am **not** responsible for your use of this code.
-Don't @ me.
-(You can open an issue if there's any problems, with no guarantee that I'll look at it.)
+* `-o <keyfile>`: The private key will be written to `<keyfile>`,
+  while the public key will be written to `<keyvile>.pub`.
+  If no keyfile path is provided, both will be printed to stdout.
+* `-j <n>`: Run using `<n>` number of threads.
+* `-i`: Ignore case.
+* `-h`: Print a help message that lists these options.
 
 ## Handy commands
 
